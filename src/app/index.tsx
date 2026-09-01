@@ -12,6 +12,8 @@ import { CaffeineTracker } from '@/components/CaffeineTracker';
 import { ExerciseTracker } from '@/components/ExerciseTracker';
 import { LifestyleTracker } from '@/components/LifestyleTracker';
 import { MoodCheckIn } from '@/components/MoodCheckIn';
+import { NSRICard } from '@/components/NSRICard';
+import { RecoverySuggestions } from '@/components/RecoverySuggestions';
 import { WaterTracker } from '@/components/WaterTracker';
 import { colors, spacing, typography } from '@/theme/theme';
 
@@ -34,6 +36,10 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>Daily Wellness</Text>
           <Text style={styles.date}>{formattedToday}</Text>
         </View>
+
+        {/* Feature 4: NSRI Recovery Card & Suggestions */}
+        <NSRICard />
+        <RecoverySuggestions />
 
         {/* Feature 1: Mood Check-in */}
         <MoodCheckIn />
