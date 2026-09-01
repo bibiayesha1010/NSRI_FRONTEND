@@ -10,7 +10,10 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { AIInsights } from '@/components/AIInsights';
+import { AIWellnessBot } from '@/components/AIWellnessBot';
 import { CaffeineTracker } from '@/components/CaffeineTracker';
+import { ChatModal } from '@/components/ChatModal';
 import { ExerciseTracker } from '@/components/ExerciseTracker';
 import { JournalModal } from '@/components/JournalModal';
 import { LifestyleTracker } from '@/components/LifestyleTracker';
@@ -107,12 +110,20 @@ export default function HomeScreen() {
           <Text style={styles.date}>{formattedToday}</Text>
         </View>
 
-        {/* Feature 4: NSRI Recovery Card & Suggestions */}
+        {/* Feature 4: NSRI Recovery Card */}
         <NSRICard />
+
+        {/* Feature 8: AI Pattern Insights */}
+        <AIInsights />
+
+        {/* Feature 4: Recovery Suggestions */}
         <RecoverySuggestions />
 
         {/* Feature 5: Quick Actions Hub */}
         <QuickActions />
+
+        {/* Feature 8: AI Wellness Bot Card */}
+        <AIWellnessBot />
 
         {/* Feature 7: Weekly Trends & Charts */}
         <WeeklyTrends />
@@ -132,11 +143,10 @@ export default function HomeScreen() {
         <LifestyleTracker />
       </ScrollView>
 
-      {/* Feature 5: Global Guided Breathing Modal */}
+      {/* Global Modals */}
       <GlobalBreathingModal />
-
-      {/* Feature 6: Global Journal Modal */}
       <JournalModal />
+      <ChatModal />
     </SafeAreaView>
   );
 }
@@ -151,9 +161,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing.xxl * 2,
+    gap: spacing.md,
   },
   header: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xs,
   },
   greeting: {
     ...typography.h1,
