@@ -13,6 +13,7 @@ import { ExerciseTracker } from '@/components/ExerciseTracker';
 import { LifestyleTracker } from '@/components/LifestyleTracker';
 import { MoodCheckIn } from '@/components/MoodCheckIn';
 import { NSRICard } from '@/components/NSRICard';
+import { GlobalBreathingModal, QuickActions } from '@/components/QuickActions';
 import { RecoverySuggestions } from '@/components/RecoverySuggestions';
 import { WaterTracker } from '@/components/WaterTracker';
 import { colors, spacing, typography } from '@/theme/theme';
@@ -41,6 +42,9 @@ export default function HomeScreen() {
         <NSRICard />
         <RecoverySuggestions />
 
+        {/* Feature 5: Quick Actions Hub */}
+        <QuickActions />
+
         {/* Feature 1: Mood Check-in */}
         <MoodCheckIn />
 
@@ -52,6 +56,9 @@ export default function HomeScreen() {
         <ExerciseTracker />
         <LifestyleTracker />
       </ScrollView>
+
+      {/* Feature 5: Global Guided Breathing Modal */}
+      <GlobalBreathingModal />
     </SafeAreaView>
   );
 }
