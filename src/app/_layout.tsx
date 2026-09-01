@@ -1,18 +1,50 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
+import { Ionicons } from '@expo/vector-icons';
+import { DarkTheme, DefaultTheme, ThemeProvider, Tabs } from 'expo-router';
 import { useColorScheme } from 'react-native';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { UIProvider } from '@/context/UIContext';
+import { WellnessProvider } from '@/context/WellnessContext';
+import { colors } from '@/theme/theme';
 
-SplashScreen.preventAutoHideAsync();
-
-export default function TabLayout() {
+export default function RootLayout() {
   const colorScheme = useColorScheme();
+
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
+      <WellnessProvider>
+        <UIProvider>
+          <Tabs
+            screenOptions={{
+              headerShown: false,
+              tabBarActiveTintColor: colors.primary,
+              tabBarInactiveTintColor: colors.textMuted,
+              tabBarStyle: {
+                backgroundColor: colors.card,
+                borderTopColor: colors.border,
+              },
+            }}
+          >
+            <Tabs.Screen
+              name="index"
+              options={{
+                title: 'Wellness',
+                tabBarIcon: ({ color, size }) => (
+                  <Ionicons name="heart-outline" size={size} color={color} />
+                ),
+              }}
+            />
+            <Tabs.Screen
+              name="explore"
+              options={{
+                title: 'Explore',
+                tabBarIcon: ({ color, size }) => (
+                  <Ionicons name="compass-outline" size={size} color={color} />
+                ),
+              }}
+            />
+          </Tabs>
+        </UIProvider>
+      </WellnessProvider>
     </ThemeProvider>
   );
 }
