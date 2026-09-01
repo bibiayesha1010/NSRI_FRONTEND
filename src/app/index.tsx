@@ -19,6 +19,7 @@ import { NSRICard } from '@/components/NSRICard';
 import { GlobalBreathingModal, QuickActions } from '@/components/QuickActions';
 import { RecoverySuggestions } from '@/components/RecoverySuggestions';
 import { WaterTracker } from '@/components/WaterTracker';
+import { WeeklyTrends } from '@/components/WeeklyTrends';
 import { Card } from '@/components/common/Card';
 import { SectionHeader } from '@/components/common/SectionHeader';
 import { useUI } from '@/context/UIContext';
@@ -112,6 +113,9 @@ export default function HomeScreen() {
 
         {/* Feature 5: Quick Actions Hub */}
         <QuickActions />
+
+        {/* Feature 7: Weekly Trends & Charts */}
+        <WeeklyTrends />
 
         {/* Feature 6: Journaling & Reflection */}
         <JournalSection />
