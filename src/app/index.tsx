@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AIInsights } from '@/components/AIInsights';
-import { AIWellnessBot } from '@/components/AIWellnessBot';
 import { CaffeineTracker } from '@/components/CaffeineTracker';
 import { ChatModal } from '@/components/ChatModal';
 import { ExerciseTracker } from '@/components/ExerciseTracker';
@@ -106,38 +105,35 @@ export default function HomeScreen() {
       >
         {/* Dashboard Header */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>Daily Wellness</Text>
+          <Text style={styles.greeting}>Daily Wellness Dashboard</Text>
           <Text style={styles.date}>{formattedToday}</Text>
         </View>
 
-        {/* Feature 4: NSRI Recovery Card */}
+        {/* NSRI Recovery Index & Contributing Factors */}
         <NSRICard />
 
-        {/* Feature 8: AI Pattern Insights */}
+        {/* AI Pattern Insights */}
         <AIInsights />
 
-        {/* Feature 4: Recovery Suggestions */}
+        {/* Recovery Suggestions */}
         <RecoverySuggestions />
 
-        {/* Feature 5: Quick Actions Hub */}
+        {/* Quick Actions Hub */}
         <QuickActions />
 
-        {/* Feature 8: AI Wellness Bot Card */}
-        <AIWellnessBot />
-
-        {/* Feature 7: Weekly Trends & Charts */}
+        {/* Weekly Trends & Charts */}
         <WeeklyTrends />
 
-        {/* Feature 6: Journaling & Reflection */}
+        {/* Journaling & Reflection */}
         <JournalSection />
 
-        {/* Feature 1: Mood Check-in */}
+        {/* Mood Check-in */}
         <MoodCheckIn />
 
-        {/* Feature 2: Water Tracking */}
+        {/* Water Tracking */}
         <WaterTracker />
 
-        {/* Feature 3: Lifestyle Trackers */}
+        {/* Lifestyle Trackers */}
         <CaffeineTracker />
         <ExerciseTracker />
         <LifestyleTracker />
