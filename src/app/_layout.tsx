@@ -21,6 +21,9 @@ export default function RootLayout() {
               tabBarStyle: {
                 backgroundColor: colors.card,
                 borderTopColor: colors.border,
+                height: 60,
+                paddingBottom: 8,
+                paddingTop: 6,
               },
             }}
           >
@@ -30,6 +33,19 @@ export default function RootLayout() {
                 title: 'Wellness',
                 tabBarIcon: ({ color, size }) => (
                   <Ionicons name="heart-outline" size={size} color={color} />
+                ),
+              }}
+            />
+            <Tabs.Screen
+              name="chat"
+              options={{
+                title: 'Companion',
+                tabBarIcon: ({ color, size, focused }) => (
+                  <Ionicons
+                    name={focused ? 'sparkles' : 'sparkles-outline'}
+                    size={size + 2}
+                    color={focused ? colors.secondary : color}
+                  />
                 ),
               }}
             />
