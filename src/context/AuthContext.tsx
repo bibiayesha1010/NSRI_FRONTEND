@@ -1,4 +1,5 @@
 import { AuthState, User } from '@/models/types';
+import * as SecureStore from 'expo-secure-store';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 interface AuthContextValue extends AuthState {
@@ -8,19 +9,17 @@ interface AuthContextValue extends AuthState {
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const USERS_KEY = 'wellness_mind_users_v1';
+const SESSION_KEY = 'wellness_mind_session_v1';
 
-// Simple in-memory storage for demo (replace with AsyncStorage/backend in production)
-const MOCK_USERS: Record<string, { password: string; user: User }> = {
-  'demo@example.com': {
-    password: 'password123',
-    user: {
-      id: '1',
-      email: 'demo@example.com',
-      name: 'Demo User',
-      createdAt: Date.now(),
-    },
-  },
-};
+async function readStoredUsers(): Promise<Record<string, { password: string; user: User }>> {
+  const raw = await SecureStore.getItemAsync(USERS_KEY);
+  return raw ? JSON.parse(raw) : {};
+}
+
+async function writeStoredUsers(users: Record<string, { password: string; user: User }>) {
+  await SecureStore.setItemAsync(USERS_KEY, JSON.stringify(users));
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -28,27 +27,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Simulate checking auth on app start
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+    const restoreSession = async () => {
+      try {
+        const storedSession = await SecureStore.getItemAsync(SESSION_KEY);
+        if (!storedSession) {
+          setLoading(false);
+          return;
+        }
+
+        const sessionUser = JSON.parse(storedSession) as User;
+        if (sessionUser?.email) {
+          setUser(sessionUser);
+          setIsAuthenticated(true);
+        }
+      } catch {
+        setUser(null);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    restoreSession();
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     setLoading(true);
     setError(null);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const normalizedEmail = email.trim().toLowerCase();
+      const users = await readStoredUsers();
+      const savedUser = users[normalizedEmail];
 
-      const mockUser = MOCK_USERS[email];
-      if (!mockUser || mockUser.password !== password) {
+      if (!savedUser || savedUser.password !== password) {
         throw new Error('Invalid email or password');
       }
 
-      setUser(mockUser.user);
+      setUser(savedUser.user);
       setIsAuthenticated(true);
+      await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(savedUser.user));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed';
       setError(message);
@@ -62,26 +80,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     setError(null);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      if (MOCK_USERS[email]) {
-        throw new Error('Email already registered');
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!normalizedEmail || !name.trim()) {
+        throw new Error('Please complete all fields');
       }
 
       if (password.length < 6) {
         throw new Error('Password must be at least 6 characters');
       }
 
+      const users = await readStoredUsers();
+      if (users[normalizedEmail]) {
+        throw new Error('Email already registered');
+      }
+
       const newUser: User = {
         id: `user-${Date.now()}`,
-        email,
-        name,
+        email: normalizedEmail,
+        name: name.trim(),
         createdAt: Date.now(),
       };
 
-      MOCK_USERS[email] = { password, user: newUser };
+      users[normalizedEmail] = { password, user: newUser };
+      await writeStoredUsers(users);
       setUser(newUser);
       setIsAuthenticated(true);
+      await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(newUser));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Signup failed';
       setError(message);
@@ -94,10 +118,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(async () => {
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
       setUser(null);
       setIsAuthenticated(false);
       setError(null);
+      await SecureStore.deleteItemAsync(SESSION_KEY);
     } finally {
       setLoading(false);
     }

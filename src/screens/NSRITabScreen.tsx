@@ -1,7 +1,9 @@
+import { useWellness } from '@/context/WellnessContext';
 import { colors, radius, shadowStyle, spacing, typography } from '@/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
+    Alert,
     Modal,
     Pressable,
     SafeAreaView,
@@ -13,7 +15,19 @@ import {
 } from 'react-native';
 
 export const NSRITabScreen: React.FC = () => {
+  const { deviceConnected, connectedDeviceType, connectWearable, disconnectWearable } = useWellness();
   const [heartRate, setHeartRate] = useState<string>('72');
+
+  const requestWearablePermission = () => {
+    Alert.alert(
+      'Connect wearable',
+      'This app needs permission to read your heart rate, HRV, sleep, and recovery data from your wearable device.',
+      [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Allow access', onPress: () => connectWearable('smartwatch') },
+      ],
+    );
+  };
   const [hrv, setHrv] = useState<string>('45');
   const [sleepHours, setSleepHours] = useState<string>('7.5');
   const [sleepQuality, setSleepQuality] = useState<string>('4');
@@ -143,15 +157,33 @@ export const NSRITabScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>Data Source</Text>
           <Pressable
             style={styles.deviceButton}
-            onPress={() => setShowDeviceModal(true)}
+            onPress={() => {
+              if (!deviceConnected) {
+                requestWearablePermission();
+                return;
+              }
+              setShowDeviceModal(true);
+            }}
           >
             <Ionicons name="watch-outline" size={20} color={colors.primary} />
             <View style={styles.deviceButtonText}>
               <Text style={styles.deviceButtonLabel}>Connected Device</Text>
-              <Text style={styles.deviceButtonValue}>{deviceType.replace('_', ' ').toUpperCase()}</Text>
+              <Text style={styles.deviceButtonValue}>
+                {deviceConnected ? connectedDeviceType.replace('_', ' ').toUpperCase() : 'CONNECT DEVICE'}
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </Pressable>
+
+          {deviceConnected && (
+            <View style={styles.deviceStatusRow}>
+              <Ionicons name="shield-checkmark" size={16} color={colors.exercise} />
+              <Text style={styles.deviceStatusText}>Wearable permission granted and syncing data</Text>
+              <Pressable onPress={disconnectWearable}>
+                <Text style={styles.deviceDisconnectText}>Disconnect</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
 
         {/* Input Section */}
@@ -464,6 +496,26 @@ const styles = StyleSheet.create({
   deviceButtonValue: {
     ...typography.bodyMedium,
     color: colors.text,
+  },
+  deviceStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.md,
+  },
+  deviceStatusText: {
+    ...typography.caption,
+    color: colors.primaryDark,
+    flex: 1,
+  },
+  deviceDisconnectText: {
+    ...typography.caption,
+    color: colors.low,
+    fontWeight: '700',
   },
   inputGroup: {
     marginBottom: spacing.lg,

@@ -20,8 +20,8 @@ interface LoginScreenProps {
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onSignupPress }) => {
   const { login, loading, error } = useAuth();
-  const [email, setEmail] = useState('demo@example.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -103,11 +103,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSignupPress }) => {
                 </View>
               )}
 
-              {/* Demo Credentials Hint */}
-              <View style={styles.hintBox}>
-                <Text style={styles.hintText}>📧 Demo: demo@example.com</Text>
-                <Text style={styles.hintText}>🔐 Password: password123</Text>
-              </View>
             </View>
 
             {/* Login Button */}

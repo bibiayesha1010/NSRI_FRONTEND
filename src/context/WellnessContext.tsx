@@ -1,18 +1,17 @@
-import React, { createContext, useCallback, useContext, useMemo, useReducer } from 'react';
 import {
-  CaffeineSource,
-  DayData,
-  ExerciseType,
-  Insight,
-  JournalEntry,
-  JournalTag,
-  Mood,
-  MoodCheckIn,
-  MOOD_META,
-  RecoverySuggestion,
-  WellnessData,
+    CaffeineSource,
+    DayData,
+    ExerciseType,
+    Insight,
+    JournalEntry,
+    Mood,
+    MOOD_META,
+    MoodCheckIn,
+    RecoverySuggestion,
+    WellnessData
 } from '@/models/types';
-import { todayISO, daysAgoISO } from '@/utils/dateUtils';
+import { daysAgoISO, todayISO } from '@/utils/dateUtils';
+import React, { createContext, useCallback, useContext, useMemo, useReducer, useState } from 'react';
 
 // ─── Caffeine amounts per source (mg) ─────────────────────────────────────────
 const CAFFEINE_MG: Record<CaffeineSource, number> = {
@@ -255,6 +254,11 @@ interface WellnessContextValue {
   insights: Insight[];
   recoverySuggestions: RecoverySuggestion[];
   latestCheckIn: MoodCheckIn | undefined;
+  deviceConnected: boolean;
+  devicePermissionStatus: 'not_requested' | 'granted' | 'denied';
+  connectedDeviceType: 'smartwatch' | 'fitness_band' | 'health_monitor' | 'manual';
+  connectWearable: (deviceType?: 'smartwatch' | 'fitness_band' | 'health_monitor' | 'manual') => void;
+  disconnectWearable: () => void;
   logWater: (ml: number) => void;
   setWaterGoal: (ml: number) => void;
   logCaffeine: (source: CaffeineSource) => void;
@@ -270,6 +274,24 @@ const WellnessContext = createContext<WellnessContextValue | undefined>(undefine
 
 export const WellnessProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
+  const [deviceConnected, setDeviceConnected] = useState(false);
+  const [devicePermissionStatus, setDevicePermissionStatus] = useState<'not_requested' | 'granted' | 'denied'>('not_requested');
+  const [connectedDeviceType, setConnectedDeviceType] = useState<'smartwatch' | 'fitness_band' | 'health_monitor' | 'manual'>('manual');
+
+  const connectWearable = useCallback(
+    (deviceType: 'smartwatch' | 'fitness_band' | 'health_monitor' | 'manual' = 'smartwatch') => {
+      setConnectedDeviceType(deviceType);
+      setDevicePermissionStatus('granted');
+      setDeviceConnected(true);
+    },
+    [],
+  );
+
+  const disconnectWearable = useCallback(() => {
+    setDeviceConnected(false);
+    setDevicePermissionStatus('denied');
+    setConnectedDeviceType('manual');
+  }, []);
 
   const logWater = useCallback((ml: number) => dispatch({ type: 'LOG_WATER', ml }), []);
   const setWaterGoal = useCallback((ml: number) => dispatch({ type: 'SET_WATER_GOAL', ml }), []);
@@ -320,6 +342,11 @@ export const WellnessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       insights,
       recoverySuggestions,
       latestCheckIn,
+      deviceConnected,
+      devicePermissionStatus,
+      connectedDeviceType,
+      connectWearable,
+      disconnectWearable,
       logWater,
       setWaterGoal,
       logCaffeine,
@@ -332,6 +359,11 @@ export const WellnessProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, [
     state,
+    deviceConnected,
+    devicePermissionStatus,
+    connectedDeviceType,
+    connectWearable,
+    disconnectWearable,
     logWater,
     setWaterGoal,
     logCaffeine,

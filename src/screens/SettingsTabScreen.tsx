@@ -1,5 +1,6 @@
 import { useAuth } from '@/context/AuthContext';
-import { colors, radius, shadowStyle, spacing, typography } from '@/theme/theme';
+import { useWellness } from '@/context/WellnessContext';
+import { applyThemeMode, colors, radius, shadowStyle, spacing, typography } from '@/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
@@ -20,7 +21,16 @@ interface ThemeContextType {
 
 export const SettingsTabScreen: React.FC = () => {
   const { user, logout } = useAuth();
+  const { deviceConnected, connectedDeviceType, connectWearable, disconnectWearable } = useWellness();
   const [darkMode, setDarkMode] = useState(false);
+
+  const handleThemeToggle = async (nextValue: boolean) => {
+    setDarkMode(nextValue);
+    applyThemeMode(nextValue);
+    await import('expo-secure-store').then((SecureStore) => {
+      SecureStore.setItemAsync('wellness_mind_theme_mode', nextValue ? 'dark' : 'light');
+    });
+  };
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [privacyMode, setPrivacyMode] = useState(false);
 
@@ -54,6 +64,65 @@ export const SettingsTabScreen: React.FC = () => {
     );
   };
 
+  const handleEditProfile = () => {
+    Alert.alert('Edit Profile', 'Profile editing is ready for your next update.');
+  };
+
+  const handleReminderTime = () => {
+    Alert.alert('Daily Reminder', 'Your reminder is set for 8:00 AM.');
+  };
+
+  const handleSecurityAction = (title: string) => {
+    Alert.alert(title, 'This security setting is enabled for your account.');
+  };
+
+  const handlePrivacyPolicy = () => {
+    Alert.alert('Privacy Policy', 'Your data stays private and is used only for wellness tracking.');
+  };
+
+  const handleConnectedDevices = () => {
+    if (deviceConnected) {
+      Alert.alert(
+        'Connected device',
+        `Your ${connectedDeviceType.replace('_', ' ')} is already connected.`,
+        [
+          { text: 'Keep connected', style: 'cancel' },
+          { text: 'Disconnect', onPress: disconnectWearable, style: 'destructive' },
+        ],
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Connect wearable',
+      'This app needs permission to read heart rate, HRV, and sleep data from your wearable device.',
+      [
+        { text: 'Not now', style: 'cancel' },
+        {
+          text: 'Allow access',
+          onPress: () => connectWearable('smartwatch'),
+        },
+      ],
+    );
+  };
+
+  const handleSyncData = () => {
+    if (!deviceConnected) {
+      handleConnectedDevices();
+      return;
+    }
+
+    Alert.alert('Sync Data', 'Your wearable data has been synced successfully.');
+  };
+
+  const handleAbout = () => {
+    Alert.alert('About Wellness Mind', 'Version 1.0.0');
+  };
+
+  const handleHelp = () => {
+    Alert.alert('Help & Support', 'Support options will open here in a future release.');
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -71,7 +140,7 @@ export const SettingsTabScreen: React.FC = () => {
               <Text style={styles.profileName}>{user?.name || 'User'}</Text>
               <Text style={styles.profileEmail}>{user?.email || 'email@example.com'}</Text>
             </View>
-            <Pressable style={styles.editButton}>
+            <Pressable style={styles.editButton} onPress={handleEditProfile}>
               <Ionicons name="pencil" size={20} color={colors.primary} />
             </Pressable>
           </View>
@@ -90,7 +159,7 @@ export const SettingsTabScreen: React.FC = () => {
                 <Text style={styles.settingLabel}>Dark Mode</Text>
                 <Text style={styles.settingDescription}>Easier on the eyes at night</Text>
               </View>
-              <Switch value={darkMode} onValueChange={setDarkMode} />
+              <Switch value={darkMode} onValueChange={handleThemeToggle} />
             </View>
           </View>
         </View>
@@ -111,7 +180,7 @@ export const SettingsTabScreen: React.FC = () => {
               <Switch value={notificationsEnabled} onValueChange={setNotificationsEnabled} />
             </View>
 
-            <View style={[styles.settingRow, styles.settingRowBordered]}>
+            <Pressable style={[styles.settingRow, styles.settingRowBordered]} onPress={handleReminderTime}>
               <View style={styles.settingIcon}>
                 <Ionicons name="time-outline" size={20} color={colors.accent} />
               </View>
@@ -120,7 +189,7 @@ export const SettingsTabScreen: React.FC = () => {
                 <Text style={styles.settingDescription}>8:00 AM</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </View>
+            </Pressable>
           </View>
         </View>
 
@@ -140,7 +209,7 @@ export const SettingsTabScreen: React.FC = () => {
               <Switch value={privacyMode} onValueChange={setPrivacyMode} />
             </View>
 
-            <View style={[styles.settingRow, styles.settingRowBordered]}>
+            <Pressable style={[styles.settingRow, styles.settingRowBordered]} onPress={() => handleSecurityAction('Two-Factor Auth')}>
               <View style={styles.settingIcon}>
                 <Ionicons name="shield-checkmark-outline" size={20} color={colors.low} />
               </View>
@@ -149,9 +218,9 @@ export const SettingsTabScreen: React.FC = () => {
                 <Text style={styles.settingDescription}>Add an extra layer of security</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </View>
+            </Pressable>
 
-            <View style={[styles.settingRow, styles.settingRowBordered]}>
+            <Pressable style={[styles.settingRow, styles.settingRowBordered]} onPress={handlePrivacyPolicy}>
               <View style={styles.settingIcon}>
                 <Ionicons name="document-text-outline" size={20} color={colors.low} />
               </View>
@@ -160,7 +229,7 @@ export const SettingsTabScreen: React.FC = () => {
                 <Text style={styles.settingDescription}>Read our privacy terms</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </View>
+            </Pressable>
           </View>
         </View>
 
@@ -169,16 +238,18 @@ export const SettingsTabScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>Wearable Devices</Text>
 
           <View style={styles.settingCard}>
-            <View style={styles.settingRow}>
+            <Pressable style={styles.settingRow} onPress={handleConnectedDevices}>
               <View style={styles.settingIcon}>
                 <Ionicons name="watch-outline" size={20} color={colors.primary} />
               </View>
               <View style={styles.settingContent}>
                 <Text style={styles.settingLabel}>Connected Devices</Text>
-                <Text style={styles.settingDescription}>Manage your smartwatch and fitness bands</Text>
+                <Text style={styles.settingDescription}>
+                  {deviceConnected ? `Connected: ${connectedDeviceType.replace('_', ' ')}` : 'Manage your smartwatch and fitness bands'}
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </View>
+            </Pressable>
 
             <View style={[styles.settingRow, styles.settingRowBordered]}>
               <View style={styles.settingIcon}>
@@ -186,10 +257,12 @@ export const SettingsTabScreen: React.FC = () => {
               </View>
               <View style={styles.settingContent}>
                 <Text style={styles.settingLabel}>Sync Data</Text>
-                <Text style={styles.settingDescription}>Last synced 2 hours ago</Text>
+                <Text style={styles.settingDescription}>
+                  {deviceConnected ? 'Last synced just now' : 'Permission required to sync'}
+                </Text>
               </View>
-              <Pressable style={styles.syncButton}>
-                <Text style={styles.syncButtonText}>Sync Now</Text>
+              <Pressable style={styles.syncButton} onPress={handleSyncData}>
+                <Text style={styles.syncButtonText}>{deviceConnected ? 'Sync Now' : 'Connect'}</Text>
               </Pressable>
             </View>
           </View>
@@ -200,7 +273,7 @@ export const SettingsTabScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>About</Text>
 
           <View style={styles.settingCard}>
-            <View style={styles.settingRow}>
+            <Pressable style={styles.settingRow} onPress={handleAbout}>
               <View style={styles.settingIcon}>
                 <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
               </View>
@@ -208,9 +281,9 @@ export const SettingsTabScreen: React.FC = () => {
                 <Text style={styles.settingLabel}>About Wellness Mind</Text>
                 <Text style={styles.settingDescription}>Version 1.0.0</Text>
               </View>
-            </View>
+            </Pressable>
 
-            <View style={[styles.settingRow, styles.settingRowBordered]}>
+            <Pressable style={[styles.settingRow, styles.settingRowBordered]} onPress={handleHelp}>
               <View style={styles.settingIcon}>
                 <Ionicons name="help-circle-outline" size={20} color={colors.primary} />
               </View>
@@ -219,7 +292,7 @@ export const SettingsTabScreen: React.FC = () => {
                 <Text style={styles.settingDescription}>Get help with using the app</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </View>
+            </Pressable>
           </View>
         </View>
 
