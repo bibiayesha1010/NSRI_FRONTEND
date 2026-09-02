@@ -1,6 +1,7 @@
 import { AuthState, User } from '@/models/types';
-import * as SecureStore from 'expo-secure-store';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+
+import { deleteStoredValue, getStoredValue, setStoredValue } from '@/utils/storage';
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
@@ -13,12 +14,12 @@ const USERS_KEY = 'wellness_mind_users_v1';
 const SESSION_KEY = 'wellness_mind_session_v1';
 
 async function readStoredUsers(): Promise<Record<string, { password: string; user: User }>> {
-  const raw = await SecureStore.getItemAsync(USERS_KEY);
+  const raw = await getStoredValue(USERS_KEY);
   return raw ? JSON.parse(raw) : {};
 }
 
 async function writeStoredUsers(users: Record<string, { password: string; user: User }>) {
-  await SecureStore.setItemAsync(USERS_KEY, JSON.stringify(users));
+  await setStoredValue(USERS_KEY, JSON.stringify(users));
 }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -30,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        const storedSession = await SecureStore.getItemAsync(SESSION_KEY);
+        const storedSession = await getStoredValue(SESSION_KEY);
         if (!storedSession) {
           setLoading(false);
           return;
@@ -66,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setUser(savedUser.user);
       setIsAuthenticated(true);
-      await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(savedUser.user));
+      await setStoredValue(SESSION_KEY, JSON.stringify(savedUser.user));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed';
       setError(message);
@@ -105,7 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await writeStoredUsers(users);
       setUser(newUser);
       setIsAuthenticated(true);
-      await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(newUser));
+      await setStoredValue(SESSION_KEY, JSON.stringify(newUser));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Signup failed';
       setError(message);
@@ -121,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setIsAuthenticated(false);
       setError(null);
-      await SecureStore.deleteItemAsync(SESSION_KEY);
+      await deleteStoredValue(SESSION_KEY);
     } finally {
       setLoading(false);
     }

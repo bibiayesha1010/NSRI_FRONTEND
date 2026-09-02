@@ -1,6 +1,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { useWellness } from '@/context/WellnessContext';
 import { applyThemeMode, colors, radius, shadowStyle, spacing, typography } from '@/theme/theme';
+import { setStoredValue } from '@/utils/storage';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
@@ -27,9 +28,7 @@ export const SettingsTabScreen: React.FC = () => {
   const handleThemeToggle = async (nextValue: boolean) => {
     setDarkMode(nextValue);
     applyThemeMode(nextValue);
-    await import('expo-secure-store').then((SecureStore) => {
-      SecureStore.setItemAsync('wellness_mind_theme_mode', nextValue ? 'dark' : 'light');
-    });
+    await setStoredValue('wellness_mind_theme_mode', nextValue ? 'dark' : 'light');
   };
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [privacyMode, setPrivacyMode] = useState(false);

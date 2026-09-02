@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { DarkTheme, DefaultTheme, Tabs, ThemeProvider } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import { Tabs } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 
@@ -10,6 +9,7 @@ import { WellnessProvider } from '@/context/WellnessContext';
 import { LoginScreen } from '@/screens/LoginScreen';
 import { SignupScreen } from '@/screens/SignupScreen';
 import { applyThemeMode, colors } from '@/theme/theme';
+import { getStoredValue } from '@/utils/storage';
 
 type AuthScreens = 'login' | 'signup';
 
@@ -106,26 +106,25 @@ function RootContent() {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const safeScheme = colorScheme === 'dark' || colorScheme === 'light' ? colorScheme : 'light';
 
   useEffect(() => {
     const restoreTheme = async () => {
-      const storedMode = await SecureStore.getItemAsync('wellness_mind_theme_mode');
-      const shouldUseDark = storedMode ? storedMode === 'dark' : colorScheme === 'dark';
+      const storedMode = await getStoredValue('wellness_mind_theme_mode');
+      const shouldUseDark = storedMode ? storedMode === 'dark' : safeScheme === 'dark';
       applyThemeMode(shouldUseDark);
     };
 
     restoreTheme();
-  }, [colorScheme]);
+  }, [safeScheme]);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AuthProvider>
-        <WellnessProvider>
-          <UIProvider>
-            <RootContent />
-          </UIProvider>
-        </WellnessProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <WellnessProvider>
+        <UIProvider>
+          <RootContent />
+        </UIProvider>
+      </WellnessProvider>
+    </AuthProvider>
   );
 }
