@@ -1,16 +1,15 @@
 import { AIInsights } from '@/components/AIInsights';
-import { AIWellnessBot } from '@/components/AIWellnessBot';
 import { LifestyleTracker } from '@/components/LifestyleTracker';
 import { MoodCheckIn } from '@/components/MoodCheckIn';
-import { NSRICard } from '@/components/NSRICard';
 import { QuickActions } from '@/components/QuickActions';
 import { RecoverySuggestions } from '@/components/RecoverySuggestions';
 import { TodaysOverview } from '@/components/TodaysOverview';
 import { WeeklyTrends } from '@/components/WeeklyTrends';
 import { colors, spacing } from '@/theme/theme';
+import React from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, View } from 'react-native';
 
-export default function HomeScreen() {
+export const WellnessTabScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -20,11 +19,6 @@ export default function HomeScreen() {
       >
         {/* Today's Overview Section */}
         <TodaysOverview />
-
-        {/* Central AI Wellness Bot */}
-        <View style={styles.botContainer}>
-          <AIWellnessBot />
-        </View>
 
         {/* Mood Check-In */}
         <View style={styles.section}>
@@ -39,11 +33,6 @@ export default function HomeScreen() {
         {/* Weekly Trends */}
         <View style={styles.section}>
           <WeeklyTrends />
-        </View>
-
-        {/* NSRI Card - Key Feature */}
-        <View style={styles.section}>
-          <NSRICard />
         </View>
 
         {/* AI Insights */}
@@ -66,7 +55,7 @@ export default function HomeScreen() {
       </ScrollView>
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -79,10 +68,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: spacing.xl,
-  },
-  botContainer: {
-    paddingHorizontal: spacing.md,
-    marginVertical: spacing.lg,
   },
   section: {
     paddingHorizontal: spacing.md,

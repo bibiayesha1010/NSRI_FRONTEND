@@ -1,325 +1,226 @@
-import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-
-import { Card } from '@/components/common/Card';
-import { ProgressBar } from '@/components/common/ProgressBar';
-import { SectionHeader } from '@/components/common/SectionHeader';
 import { useWellness } from '@/context/WellnessContext';
 import { nsriColor, nsriLabel, scoreDay } from '@/services/nsriService';
-import { colors, radius, spacing, typography } from '@/theme/theme';
+import { colors, radius, shadowStyle, spacing, typography } from '@/theme/theme';
+import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
-// ─── Contributing factor tile ─────────────────────────────────────────────────
-interface FactorTileProps {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  /** 0-1 */
-  progress: number;
-  color: string;
-  valueText: string;
-  logged: boolean;
-}
-
-const FactorTile: React.FC<FactorTileProps> = ({
-  icon,
-  label,
-  progress,
-  color,
-  valueText,
-  logged,
-}) => (
-  <View style={styles.factorTile}>
-    <View style={[styles.factorIcon, { backgroundColor: color + '22' }]}>
-      <Ionicons name={icon} size={15} color={color} />
-    </View>
-    <Text style={styles.factorLabel}>{label}</Text>
-    <Text style={[styles.factorValue, !logged && styles.factorValueMuted]}>{valueText}</Text>
-    <ProgressBar progress={progress} color={logged ? color : colors.border} height={4} />
-  </View>
-);
-
-// ─── Trend arrow ──────────────────────────────────────────────────────────────
-interface TrendProps {
-  today: number;
-  yesterday: number | null;
-}
-
-const TrendIndicator: React.FC<TrendProps> = ({ today, yesterday }) => {
-  if (yesterday == null) return null;
-
-  const delta = today - yesterday;
-  const abs = Math.abs(delta);
-
-  if (abs < 3) {
-    return (
-      <View style={styles.trendRow}>
-        <Ionicons name="remove-outline" size={14} color={colors.textMuted} />
-        <Text style={styles.trendText}>Steady compared to yesterday</Text>
-      </View>
-    );
-  }
-
-  const up = delta > 0;
-  return (
-    <View style={styles.trendRow}>
-      <Ionicons
-        name={up ? 'trending-up-outline' : 'trending-down-outline'}
-        size={14}
-        color={up ? colors.exercise : colors.low}
-      />
-      <Text style={[styles.trendText, { color: up ? colors.exercise : colors.low }]}>
-        {up ? '+' : ''}
-        {delta} pts vs yesterday
-      </Text>
-    </View>
-  );
-};
-
-// ─── Score arc gauge ──────────────────────────────────────────────────────────
-interface GaugeProps {
-  score: number;
-  color: string;
-}
-
-const ScoreGauge: React.FC<GaugeProps> = ({ score, color }) => {
-  const label = nsriLabel(score);
-
-  return (
-    <View style={styles.gaugeWrap}>
-      <View style={[styles.gaugeOuter, { borderColor: color + '33' }]}>
-        <View style={[styles.gaugeInner, { borderColor: color }]}>
-          <Text style={[styles.gaugeScore, { color }]}>{score}</Text>
-          <Text style={styles.gaugeOutOf}>/100</Text>
-        </View>
-      </View>
-      <Text style={[styles.gaugeLabel, { color }]}>{label}</Text>
-    </View>
-  );
-};
-
-// ─── Main component ───────────────────────────────────────────────────────────
 export const NSRICard: React.FC = () => {
   const { data, fullHistory } = useWellness();
-  const { today } = data;
 
-  const todayScore = useMemo(() => scoreDay(today), [today]);
+  const todayScore = scoreDay(data.today);
+  const yesterday = fullHistory.length > 1 ? fullHistory[fullHistory.length - 2] : null;
+  const yesterdayScore = yesterday ? scoreDay(yesterday) : null;
+  const change = yesterdayScore !== null ? todayScore - yesterdayScore : 0;
 
-  const yesterdayScore = useMemo(() => {
-    const yesterday = fullHistory[fullHistory.length - 2];
-    return yesterday ? scoreDay(yesterday) : null;
-  }, [fullHistory]);
+  const label = nsriLabel(todayScore);
+  const statusColor = nsriColor(todayScore);
 
-  const scoreColor = nsriColor(todayScore);
+  // Calculate contributing factors
+  const factors = [];
+  if (data.today.sleepHours >= 7 && data.today.sleepQuality >= 4) {
+    factors.push({ text: 'Consistent sleep', positive: true });
+  } else if (data.today.sleepHours < 6 || data.today.sleepQuality < 2) {
+    factors.push({ text: 'Low sleep quality', positive: false });
+  }
 
-  // ─── Factor tiles config ─────────────────────────────────────────────────
-  const factors: FactorTileProps[] = [
-    {
-      icon: 'moon-outline',
-      label: 'Sleep',
-      progress: Math.min(today.sleepHours / 8, 1),
-      color: colors.primary,
-      valueText: today.sleepHours > 0 ? `${today.sleepHours}h` : 'Not logged',
-      logged: today.sleepHours > 0,
-    },
-    {
-      icon: 'water-outline',
-      label: 'Water',
-      progress: Math.min(today.waterMl / today.waterGoalMl, 1),
-      color: colors.water,
-      valueText: `${(today.waterMl / 1000).toFixed(1)}L`,
-      logged: today.waterMl > 0,
-    },
-    {
-      icon: 'happy-outline',
-      label: 'Mood',
-      progress: today.moodScore != null ? (today.moodScore - 1) / 4 : 0,
-      color: colors.secondary,
-      valueText: today.moodScore != null ? `${today.moodScore.toFixed(1)}/5` : 'Not logged',
-      logged: today.moodScore != null,
-    },
-    {
-      icon: 'walk-outline',
-      label: 'Exercise',
-      progress: Math.min(today.exerciseMin / 30, 1),
-      color: colors.exercise,
-      valueText: `${today.exerciseMin}min`,
-      logged: today.exerciseMin > 0,
-    },
-    {
-      icon: 'pulse-outline',
-      label: 'Stress',
-      progress: today.stressScore != null ? (5 - today.stressScore) / 4 : 0,
-      color: colors.attention,
-      valueText: today.stressScore != null ? `${today.stressScore}/5` : 'Not logged',
-      logged: today.stressScore != null,
-    },
-    {
-      icon: 'battery-charging-outline',
-      label: 'Energy',
-      progress: today.energyScore != null ? (today.energyScore - 1) / 4 : 0,
-      color: colors.accent,
-      valueText: today.energyScore != null ? `${today.energyScore}/5` : 'Not logged',
-      logged: today.energyScore != null,
-    },
-  ];
+  if (data.today.exerciseMin >= 30) {
+    factors.push({ text: 'Regular movement', positive: true });
+  } else if (data.today.exerciseMin === 0) {
+    factors.push({ text: 'No movement yet', positive: false });
+  }
+
+  if (data.today.waterMl >= data.today.waterGoalMl * 0.8) {
+    factors.push({ text: 'Good hydration', positive: true });
+  } else if (data.today.waterMl < data.today.waterGoalMl * 0.5) {
+    factors.push({ text: 'Lower hydration', positive: false });
+  }
+
+  if (data.today.caffeineMg > 400) {
+    factors.push({ text: 'Higher caffeine intake', positive: false });
+  }
+
+  if (data.today.stressScore !== null && data.today.stressScore <= 2) {
+    factors.push({ text: 'Lower stress', positive: true });
+  } else if (data.today.stressScore !== null && data.today.stressScore >= 4) {
+    factors.push({ text: 'Higher stress', positive: false });
+  }
 
   return (
-    <Card>
-      <SectionHeader
-        title="Your NSRI Score"
-        subtitle="Neuro-Regulatory Status Index"
-        icon="analytics-outline"
-        iconColor={scoreColor}
-      />
+    <View style={styles.container}>
+      <View style={[styles.card, { borderLeftColor: statusColor }]}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.title}>Nervous System Status</Text>
+            <Text style={styles.subtitle}>NSRI Score</Text>
+          </View>
+          <Ionicons name="pulse" size={24} color={statusColor} />
+        </View>
 
-      {/* Score gauge + trend */}
-      <View style={styles.scoreRow}>
-        <ScoreGauge score={todayScore} color={scoreColor} />
-        <View style={styles.scoreRight}>
-          <TrendIndicator today={todayScore} yesterday={yesterdayScore} />
-          <Text style={styles.scoreBlurb}>
-            Your NSRI reflects today's sleep, hydration, mood, movement, stress, and energy.
-            Log more data to improve accuracy.
+        {/* Main Score Display */}
+        <View style={styles.scoreRow}>
+          <View style={[styles.scoreCircle, { borderColor: statusColor }]}>
+            <Text style={[styles.scoreNumber, { color: statusColor }]}>{todayScore}</Text>
+            <Text style={styles.scoreMax}>/100</Text>
+          </View>
+
+          <View style={styles.scoreInfo}>
+            <Text style={[styles.scoreLabel, { color: statusColor }]}>{label}</Text>
+            {change !== 0 && (
+              <Text style={[styles.scoreChange, { color: change > 0 ? colors.exercise : colors.low }]}>
+                {change > 0 ? '+' : ''}{change} from yesterday
+              </Text>
+            )}
+            <Text style={styles.scoreDescription}>
+              {todayScore >= 85
+                ? 'You\'re well-regulated and resilient'
+                : todayScore >= 70
+                ? 'You\'re managing well'
+                : todayScore >= 55
+                ? 'You\'re balanced'
+                : todayScore >= 40
+                ? 'You could use some support'
+                : 'Focus on self-care today'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Contributing Factors */}
+        {factors.length > 0 && (
+          <View style={styles.factorsSection}>
+            <Text style={styles.factorsTitle}>What's affecting your score:</Text>
+            {factors.map((factor, idx) => (
+              <View key={idx} style={styles.factorRow}>
+                <Ionicons
+                  name={factor.positive ? 'checkmark-circle' : 'alert-circle'}
+                  size={16}
+                  color={factor.positive ? colors.exercise : colors.attention}
+                  style={styles.factorIcon}
+                />
+                <Text style={[styles.factorText, !factor.positive && styles.factorTextNegative]}>
+                  {factor.positive ? '✓' : '⚠'} {factor.text}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Footer Note */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            NSRI is a self-tracking wellness indicator based on your logged data. It's not a medical diagnosis.
           </Text>
         </View>
       </View>
-
-      {/* Overall progress bar */}
-      <View style={styles.overallBar}>
-        <ProgressBar progress={todayScore / 100} color={scoreColor} height={8} />
-        <View style={styles.barLabels}>
-          <Text style={styles.barLabelLeft}>0</Text>
-          <Text style={styles.barLabelRight}>100</Text>
-        </View>
-      </View>
-
-      {/* Factor tiles grid */}
-      <Text style={styles.factorsHeading}>Contributing factors</Text>
-      <View style={styles.factorsGrid}>
-        {factors.map((f) => (
-          <FactorTile key={f.label} {...f} />
-        ))}
-      </View>
-    </Card>
+    </View>
   );
 };
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  container: {
+    marginHorizontal: spacing.md,
+    marginVertical: spacing.lg,
+  },
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    borderLeftWidth: 4,
+    ...shadowStyle,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.lg,
+  },
+  title: {
+    ...typography.h2,
+    color: colors.text,
+  },
+  subtitle: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+  },
   scoreRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: spacing.lg,
+    gap: spacing.lg,
   },
-  gaugeWrap: {
-    alignItems: 'center',
-    marginRight: spacing.lg,
-  },
-  gaugeOuter: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  gaugeInner: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
+  scoreCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     borderWidth: 3,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.cardMuted,
   },
-  gaugeScore: {
-    fontSize: 28,
-    fontWeight: '800',
-    lineHeight: 32,
+  scoreNumber: {
+    ...typography.h1,
+    fontWeight: '700',
   },
-  gaugeOutOf: {
-    ...typography.tiny,
+  scoreMax: {
+    ...typography.caption,
     color: colors.textMuted,
   },
-  gaugeLabel: {
-    ...typography.caption,
-    fontWeight: '700',
-    marginTop: spacing.xs,
-  },
-  scoreRight: {
+  scoreInfo: {
     flex: 1,
   },
-  trendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
+  scoreLabel: {
+    ...typography.bodyMedium,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
   },
-  trendText: {
-    ...typography.tiny,
-    color: colors.textMuted,
-    marginLeft: spacing.xs,
-    fontWeight: '600',
-  },
-  scoreBlurb: {
-    ...typography.tiny,
-    color: colors.textMuted,
-    lineHeight: 17,
-  },
-  overallBar: {
-    marginBottom: spacing.lg,
-  },
-  barLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.xs,
-  },
-  barLabelLeft: {
-    ...typography.tiny,
-    color: colors.textMuted,
-  },
-  barLabelRight: {
-    ...typography.tiny,
-    color: colors.textMuted,
-  },
-  factorsHeading: {
+  scoreChange: {
     ...typography.caption,
-    color: colors.textMuted,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
     fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
-  factorsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  scoreDescription: {
+    ...typography.body,
+    color: colors.textMuted,
+    lineHeight: 20,
   },
-  factorTile: {
-    width: '48%',
+  factorsSection: {
     backgroundColor: colors.cardMuted,
     borderRadius: radius.md,
     padding: spacing.md,
     marginBottom: spacing.md,
   },
-  factorIcon: {
-    width: 26,
-    height: 26,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xs,
-  },
-  factorLabel: {
-    ...typography.tiny,
-    color: colors.textMuted,
-    marginBottom: 2,
-  },
-  factorValue: {
+  factorsTitle: {
     ...typography.bodyMedium,
     color: colors.text,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
-  factorValueMuted: {
+  factorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: spacing.xs,
+  },
+  factorIcon: {
+    marginRight: spacing.sm,
+  },
+  factorText: {
+    ...typography.body,
+    color: colors.text,
+    flex: 1,
+  },
+  factorTextNegative: {
     color: colors.textMuted,
-    fontWeight: '400',
+  },
+  footer: {
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  footerText: {
+    ...typography.tiny,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+    lineHeight: 16,
   },
 });

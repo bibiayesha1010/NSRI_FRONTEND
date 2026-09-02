@@ -1,4 +1,4 @@
-import { DayData, MoodCheckIn, Mood } from '@/models/types';
+import { DayData, Mood, MoodCheckIn } from '@/models/types';
 
 // Crisis keywords – if any appear, return a crisis-safe response
 const CRISIS_KEYWORDS = [
@@ -70,6 +70,22 @@ interface BotContext {
   today: DayData;
   recentCheckIns: MoodCheckIn[];
   latestInsightText?: string;
+  nsriScore?: number;
+  overviewSummary?: string;
+}
+
+function getOverviewSummary(context: BotContext): string {
+  const { today, nsriScore } = context;
+  const mood = context.recentCheckIns.length
+    ? context.recentCheckIns[context.recentCheckIns.length - 1].mood
+    : 'not logged yet';
+  const water = today.waterMl > 0 ? `${(today.waterMl / 1000).toFixed(1)}L` : 'not enough water yet';
+  const sleep = today.sleepHours > 0 ? `${today.sleepHours}h sleep` : 'sleep not logged yet';
+  const exercise = today.exerciseMin > 0 ? `${today.exerciseMin} min movement` : 'no movement logged yet';
+  const stress = today.stressScore != null ? `${today.stressScore}/5 stress` : 'stress not logged yet';
+  const nsri = typeof nsriScore === 'number' ? `${nsriScore}/100 NSRI` : 'NSRI not available';
+
+  return `Right now your snapshot is: mood ${mood}, ${water}, ${sleep}, ${exercise}, ${stress}, and ${nsri}.`;
 }
 
 /**
@@ -106,18 +122,35 @@ export async function sendMessageToBot(
     };
   }
 
+  // Overview / dashboard / "how am I doing" questions
+  if (containsAny(userText, ['overview', 'summary', 'how am i doing', 'dashboard', 'status', 'my day', 'what is my current status'])) {
+    const overview = context.overviewSummary ?? getOverviewSummary(context);
+    const reply = `${overview} ${context.latestInsightText ? `One pattern I noticed: ${context.latestInsightText}` : 'Keep tracking to see how it shifts over the week.'}`;
+    return { text: reply, isCrisisResponse: false };
+  }
+
+  // NSRI / nervous system questions
+  if (containsAny(userText, ['nsri', 'nervous system', 'stress level', 'exhaustion', 'recovery'])) {
+    const nsri = typeof context.nsriScore === 'number' ? context.nsriScore : 0;
+    const status = nsri >= 80 ? 'well-regulated' : nsri >= 65 ? 'stable' : nsri >= 50 ? 'moderately activated' : 'under strain';
+    const reply = `Your current NSRI is ${nsri}/100, which suggests your nervous system is ${status}. ${context.latestInsightText ?? 'Your overall trend is most influenced by sleep, stress, and hydration right now.'}`;
+    return { text: reply, isCrisisResponse: false };
+  }
+
   // Trend / history question
   if (containsAny(userText, TREND_KEYWORDS)) {
     const { today } = context;
     const waterStatus = today.waterMl >= today.waterGoalMl ? 'You hit your hydration goal today' : `You've had ${(today.waterMl / 1000).toFixed(1)}L of water so far`;
     const sleepStatus = today.sleepHours > 0 ? `slept ${today.sleepHours}h` : 'not logged sleep yet';
+    const nsriStatus = typeof context.nsriScore === 'number' ? `Your NSRI is ${context.nsriScore}/100.` : '';
     const reply =
-      `Here's a quick snapshot of today: ${waterStatus}, you've ${sleepStatus}, and you've moved ${today.exerciseMin} minutes. ` +
+      `Here's a quick snapshot of today: ${waterStatus}, you've ${sleepStatus}, and you've moved ${today.exerciseMin} minutes. ${nsriStatus} ` +
       (context.latestInsightText ? `One pattern I noticed: ${context.latestInsightText}` : "Keep logging and I'll spot more patterns for you.");
     return { text: reply, isCrisisResponse: false };
   }
 
   // Generic fallback — cycle through supportive responses
-  const response = GENERIC_RESPONSES[Math.floor(Math.random() * GENERIC_RESPONSES.length)];
+  const overview = context.overviewSummary ?? getOverviewSummary(context);
+  const response = `${overview} ${GENERIC_RESPONSES[Math.floor(Math.random() * GENERIC_RESPONSES.length)]}`;
   return { text: response, isCrisisResponse: false };
 }

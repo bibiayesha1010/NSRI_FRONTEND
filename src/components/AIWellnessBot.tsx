@@ -1,5 +1,6 @@
 import { useUI } from '@/context/UIContext';
 import { useWellness } from '@/context/WellnessContext';
+import { scoreDay } from '@/services/nsriService';
 import { colors, radius, shadowStyle, spacing, typography } from '@/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
@@ -7,11 +8,12 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 export const AIWellnessBot: React.FC = () => {
   const { openChat } = useUI();
-  const { latestCheckIn } = useWellness();
+  const { data, latestCheckIn } = useWellness();
 
-  const prompt = latestCheckIn
-    ? "I'm here. Want to talk about how today has been?"
-    : "I'm here. What's on your mind today?";
+  const nsriScore = scoreDay(data.today);
+  const moodLabel = latestCheckIn ? latestCheckIn.mood : 'not logged yet';
+  const sleepSummary = data.today.sleepHours > 0 ? `${data.today.sleepHours}h sleep` : 'sleep not logged';
+  const prompt = `Your dashboard is showing ${nsriScore}/100 NSRI, ${moodLabel} mood, and ${sleepSummary}. Want to talk through it?`;
 
   return (
     <View style={styles.card}>

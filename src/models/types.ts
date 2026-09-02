@@ -1,3 +1,46 @@
+// ─── User & Auth ──────────────────────────────────────────────────────────────
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: number;
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+}
+
+// ─── Wearable Device Data ────────────────────────────────────────────────────
+export interface WearableDevice {
+  id: string;
+  name: string;
+  type: 'smartwatch' | 'fitness_band' | 'health_monitor' | 'manual';
+  lastSync: number;
+}
+
+export interface DeviceReading {
+  id: string;
+  deviceId: string;
+  timestamp: number;
+  heartRate?: number;
+  hrv?: number;
+  sleepHours?: number;
+  sleepQuality?: number;
+  steps?: number;
+  calories?: number;
+}
+
+export interface NSRIDeviceData {
+  heartRate: number | null;
+  hrv: number | null;
+  sleepHours: number | null;
+  sleepQuality: number | null;
+  lastReadingTime: number | null;
+}
+
 // ─── Mood ──────────────────────────────────────────────────────────────────────
 export type Mood = 'great' | 'good' | 'okay' | 'low' | 'difficult';
 
